@@ -1,0 +1,11 @@
+When cowrie is not running and it should be restarted again use these commands for the cowrie to run again
+cd ~/cowrie
+source cowrie-env/bin/activate
+python -m cowrie.scripts.cowrie status #IF COWRIE IS NOT RUNNING IT PRINT NOT RUNNING 
+#THEN TRY THESE 
+python -m cowrie.scripts.cowrie start
+python -m cowrie.scripts.cowrie status #DISPLAYS COWRIE IS RUNNING 
+#THEN VERIFY IS PORT 2222 IS LISTENING 
+ss -tlnp | grep 2222
+#START ATTACKING SSH WAY
+ssh root@127.0.0.1 -p 2222
