@@ -1,0 +1,8 @@
+terminal commands (by order)
+
+#Installing docker 
+sudo apt install docker 
+docker --version 
+
+#importing cowrie from a git repositirt
+sudo apt install git
