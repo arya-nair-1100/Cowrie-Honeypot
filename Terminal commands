@@ -1,8 +1,208 @@
-terminal commands (by order)
+TERMINAL COMMANDS BY ORDER ..........................
 
-#Installing docker 
-sudo apt install docker 
-docker --version 
 
-#importing cowrie from a git repositirt
-sudo apt install git
+#Step 1: Update the System
+RUN:
+
+sudo apt update
+sudo apt upgrade -y
+
+
+
+
+#Step 2: Install Git
+
+sudo apt install git -y
+
+#Verify installation:
+
+git --version
+
+
+
+
+#Step 3: Install Docker
+
+sudo apt install docker.io -y
+
+#Start Docker:
+
+sudo systemctl start docker
+
+
+#Enable Docker at boot:
+
+sudo systemctl enable docker
+
+#Verify:
+
+docker --version
+
+sudo usermod -aG docker $USER-----------> ((OPTIONAL))
+
+Restart the terminal afterwards.
+
+
+
+
+
+#Step 4: Clone Cowrie Honeypot
+cd ~
+
+git clone https://github.com/cowrie/cowrie.git
+
+cd cowrie
+
+
+
+
+#Step 5: Create Python Virtual Environment
+
+python3 -m venv cowrie-env
+
+#Activate:
+
+source cowrie-env/bin/activate
+
+
+
+
+#Step 6: Install Cowrie Dependencies
+
+pip install --upgrade pip
+
+pip install -r requirements.txt
+
+
+
+
+#Step 7: Configure Cowrie
+
+#Copy the default configuration:
+
+cp etc/cowrie.cfg.dist etc/cowrie.cfg
+
+
+
+
+
+#Step 8: Start Cowrie
+bin/cowrie start
+
+#Check status:
+
+bin/cowrie status
+
+#Stop Cowrie:
+
+bin/cowrie stop
+
+#Restart Cowrie:
+
+bin/cowrie restart
+
+
+
+
+
+#Step 9: Verify Honeypot
+
+#Connect using SSH:
+
+ssh root@127.0.0.1 -p 2222
+
+#Example credentials:
+
+#Username: root
+
+#Password: root
+
+#Run a few commands:
+
+ls
+
+whoami
+
+cat /etc/passwd
+
+wget test.com
+
+rm file
+
+exit
+
+
+
+
+#Cowrie logs these commands without affecting the host system.
+
+
+
+
+#Step 10: Clone HoneyTrack
+cd ~
+git clone <YOUR_GITHUB_REPOSITORY>
+cd HoneyTrack
+
+
+
+
+#Step 11: Install Project Dependencies
+pip install flask
+
+#Verify:
+
+python -c "import flask; print(flask.__version__)"
+
+
+
+
+
+#Step 12: Create SQLite Database
+mkdir database
+
+sqlite3 database/honeytrack.db
+
+#Create the required tables:
+#sessions,commands,firewall_rules
+
+#Exit SQLite:
+.quit
+
+
+#Step 13: Parse Cowrie Logs
+python parser.py
+
+#This imports:
+
+#Login sessions
+#Commands
+#Risk scores
+#Firewall actions
+
+
+
+
+#Step 14: Launch Dashboard
+python app.py
+
+
+
+
+Open:
+
+#http://127.0.0.1:5000
+
+
+
+#Step 15: Test HoneyTrack
+
+
+#Start Cowrie.
+#Login through SSH.
+#Execute various commands.
+
+
+
+#Run:
+python parser.py
