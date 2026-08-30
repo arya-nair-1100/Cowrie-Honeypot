@@ -1,0 +1,84 @@
+┌──(arya㉿kali)-[~/HoneyTrack]
+└─$ cd ~/cowrie
+source cowrie-env/bin/activate
+python -m cowrie.scripts.cowrie status
+cowrie is running (PID: 2446).
+                                                                                                                                                            
+┌──(cowrie-env)─(arya㉿kali)-[~/cowrie]
+└─$ ss -lntp | grep 2222
+LISTEN 0      50           0.0.0.0:2222       0.0.0.0:*    users:(("twistd",pid=2446,fd=11))
+                                                                                                                                                            
+┌──(cowrie-env)─(arya㉿kali)-[~/cowrie]
+└─$ cd ~/cowrie
+tail -f var/log/cowrie/cowrie.json
+{"session":"383c46ce5f95","protocol":"ssh","src_ip":"127.0.0.1","src_port":38340,"dst_ip":"127.0.0.1","dst_port":2222,"width":156,"height":38,"eventid":"cowrie.client.size","sensor":"kali","uuid":"ebf29ffa-89c3-11f1-bd57-000c2985c720","timestamp":"2026-08-30T12:26:21.990978Z","message":"Terminal Size: 156 38"}
+{"session":"383c46ce5f95","protocol":"ssh","src_ip":"127.0.0.1","src_port":38340,"dst_ip":"127.0.0.1","dst_port":2222,"name":"COLORTERM","value":"truecolor","eventid":"cowrie.client.var","sensor":"kali","uuid":"ebf29ffa-89c3-11f1-bd57-000c2985c720","timestamp":"2026-08-30T12:26:21.991200Z","message":"request_env: COLORTERM=truecolor"}
+{"session":"383c46ce5f95","protocol":"ssh","src_ip":"127.0.0.1","src_port":38340,"dst_ip":"127.0.0.1","dst_port":2222,"name":"LANG","value":"en_IN","eventid":"cowrie.client.var","sensor":"kali","uuid":"ebf29ffa-89c3-11f1-bd57-000c2985c720","timestamp":"2026-08-30T12:26:21.991301Z","message":"request_env: LANG=en_IN"}
+{"session":"383c46ce5f95","protocol":"ssh","src_ip":"127.0.0.1","src_port":38340,"dst_ip":"127.0.0.1","dst_port":2222,"arch":"linux-x64-lsb","eventid":"cowrie.session.params","sensor":"kali","uuid":"ebf29ffa-89c3-11f1-bd57-000c2985c720","timestamp":"2026-08-30T12:26:21.991591Z","message":""}
+{"session":"383c46ce5f95","protocol":"ssh","src_ip":"127.0.0.1","src_port":38340,"dst_ip":"127.0.0.1","dst_port":2222,"input":"whoami","eventid":"cowrie.command.input","sensor":"kali","uuid":"ebf29ffa-89c3-11f1-bd57-000c2985c720","timestamp":"2026-08-30T12:26:27.879264Z","message":"CMD: whoami"}
+{"session":"383c46ce5f95","protocol":"ssh","src_ip":"127.0.0.1","src_port":38340,"dst_ip":"127.0.0.1","dst_port":2222,"input":"pwd","eventid":"cowrie.command.input","sensor":"kali","uuid":"ebf29ffa-89c3-11f1-bd57-000c2985c720","timestamp":"2026-08-30T12:26:29.986939Z","message":"CMD: pwd"}
+{"session":"383c46ce5f95","protocol":"ssh","src_ip":"127.0.0.1","src_port":38340,"dst_ip":"127.0.0.1","dst_port":2222,"input":"ls","eventid":"cowrie.command.input","sensor":"kali","uuid":"ebf29ffa-89c3-11f1-bd57-000c2985c720","timestamp":"2026-08-30T12:26:30.677602Z","message":"CMD: ls"}
+{"session":"383c46ce5f95","protocol":"ssh","src_ip":"127.0.0.1","src_port":38340,"dst_ip":"127.0.0.1","dst_port":2222,"input":"exit","eventid":"cowrie.command.input","sensor":"kali","uuid":"ebf29ffa-89c3-11f1-bd57-000c2985c720","timestamp":"2026-08-30T12:26:42.438436Z","message":"CMD: exit"}
+{"session":"383c46ce5f95","protocol":"ssh","src_ip":"127.0.0.1","src_port":38340,"dst_ip":"127.0.0.1","dst_port":2222,"ttylog":"var/lib/cowrie/tty/b3153695e837261c2c90faaa5334af0c231f7243548e84b5564c6d5ba6c865d2","size":440,"shasum":"b3153695e837261c2c90faaa5334af0c231f7243548e84b5564c6d5ba6c865d2","duplicate":false,"duration_ms":20451,"eventid":"cowrie.log.closed","sensor":"kali","uuid":"ebf29ffa-89c3-11f1-bd57-000c2985c720","timestamp":"2026-08-30T12:26:42.442711Z","message":"Closing TTY Log: var/lib/cowrie/tty/b3153695e837261c2c90faaa5334af0c231f7243548e84b5564c6d5ba6c865d2 after 20451 milliseconds"}
+{"session":"383c46ce5f95","protocol":"ssh","src_ip":"127.0.0.1","src_port":38340,"dst_ip":"127.0.0.1","dst_port":2222,"duration_ms":32751,"eventid":"cowrie.session.closed","sensor":"kali","uuid":"ebf29ffa-89c3-11f1-bd57-000c2985c720","timestamp":"2026-08-30T12:26:42.444219Z","message":"Connection lost after 32751 milliseconds"}
+^C
+                                                                                                                                                            
+┌──(cowrie-env)─(arya㉿kali)-[~/cowrie]
+└─$ cd ~/HoneyTrack
+source venv/bin/activate
+python parser.py
+HoneyTrack database updated successfully.
+                                                                                                                                                            
+┌──(venv)─(arya㉿kali)-[~/HoneyTrack]
+└─$ 
+
+
+
+2ND TERMINAL.....................
+──(arya㉿kali)-[~/cowrie]
+└─$ cd ~/HoneyTrack
+source venv/bin/activate
+python app.py
+ * Serving Flask app 'app'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5000
+Press CTRL+C to quit
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 977-201-797
+127.0.0.1 - - [30/Aug/2026 12:25:56] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [30/Aug/2026 12:25:56] "GET /static/css/style.css HTTP/1.1" 304 -
+^C   
+
+
+
+
+
+
+
+3rd TERMINAL.....................
+──(arya㉿kali)-[~/HoneyTrack]
+└─$ ssh root@127.0.0.1 -p 2222
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+root@127.0.0.1's password: 
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+root@svr04:~# whoami 
+root
+root@svr04:~# pwd 
+/root
+root@svr04:~# ls 
+root@svr04:~# exit 
+Connection to 127.0.0.1 closed.
+                                                                                                                                                     
+┌──(arya㉿kali)-[~/HoneyTrack]
+└─$ 
+
