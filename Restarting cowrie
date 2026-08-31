@@ -7,5 +7,9 @@ python -m cowrie.scripts.cowrie start
 python -m cowrie.scripts.cowrie status #DISPLAYS COWRIE IS RUNNING 
 #THEN VERIFY IS PORT 2222 IS LISTENING 
 ss -tlnp | grep 2222
-#START ATTACKING SSH WAY
+
+
+#START ATTACKING SSH WAY(ANOTHER
 ssh root@127.0.0.1 -p 2222
+
+
