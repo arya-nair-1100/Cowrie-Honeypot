@@ -1,0 +1,61 @@
+from risk_engine import calculate_risk
+
+import json
+import sqlite3
+
+LOGFILE = "/home/arya/cowrie/var/log/cowrie/cowrie.json"
+
+conn = sqlite3.connect("database/honeytrack.db")
+cursor = conn.cursor()
+
+with open(LOGFILE) as file:
+    for line in file:
+
+        try:
+            log = json.loads(line)
+
+            if "username" in log:
+		username = log.get("username", "")
+		password = log.get("password", "")
+		eventid = log.get("eventid", "")
+		protocol = log.get("protocol", "")
+		
+                cursor.execute("""
+                INSERT INTO attacks(
+                    timestamp,
+                    src_ip,
+                    username,
+                    password,
+                    eventid,
+                    risk_score,
+                    action_taken
+                )
+                VALUES(?,?,?,?,?,?,?)
+                """, (
+
+                    log.get("timestamp"),
+                    log.get("src_ip"),
+                    log.get("username"),
+                    log.get("password"),
+                    log.get("eventid"),
+                    0,
+                    "Pending"
+
+                ))
+
+        except:
+            pass
+
+conn.commit()
+conn.close()
+
+print("Logs imported successfully.")
+score, level, action = calculate_risk(
+    username=username,
+    password=password,
+    eventid=eventid,
+    protocol=protocol,
+    command="",
+    attempts=1,
+    previous_attacks=0
+
