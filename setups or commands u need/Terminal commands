@@ -141,7 +141,7 @@ exit
 
 #Step 10: Clone HoneyTrack
 cd ~
-git clone <YOUR_GITHUB_REPOSITORY>
+git clone https://github.com/arya-nair-1100/Cowrie-Honeypot
 cd HoneyTrack
 
 
