@@ -1,0 +1,306 @@
+'''REPLACE THE OROGINAL PARSER.PY WITH THIS '''
+
+import json
+import sqlite3
+import time
+
+from risk_engine import calculate_risk
+from command_risk import get_command_score
+
+
+# ================= CONFIGURATION =================
+
+LOGFILE = "/home/arya/cowrie/var/log/cowrie/cowrie.json"
+DB_PATH = "database/honeytrack.db"
+
+
+# ================= DATABASE =================
+
+def get_connection():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+# ================= RISK LEVEL =================
+
+def get_risk_level(score):
+
+    if score < 30:
+        return "LOW", "Monitor"
+
+    elif score < 60:
+        return "MEDIUM", "Alert + Block 30 min"
+
+    elif score < 80:
+        return "HIGH", "Block 30 min"
+
+    else:
+        return "CRITICAL", "Permanent Block"
+
+
+# ================= PROCESS EVENT =================
+
+def process_event(log):
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        eventid = log.get("eventid", "")
+        session_id = log.get("session")
+
+        if not session_id:
+            return
+
+        # ==================================================
+        # LOGIN EVENTS
+        # ==================================================
+
+        if "username" in log:
+
+            src_ip = log.get("src_ip")
+
+            cursor.execute(
+                "SELECT COUNT(*) FROM sessions WHERE src_ip=?",
+                (src_ip,)
+            )
+
+            previous = cursor.fetchone()[0]
+
+            score, level, action = calculate_risk(
+                username=log.get("username", ""),
+                password=log.get("password", ""),
+                eventid=eventid,
+                protocol=log.get("protocol", ""),
+                attempts=1,
+                previous_attacks=previous
+            )
+
+            cursor.execute("""
+                INSERT OR IGNORE INTO sessions(
+                    session_id,
+                    timestamp,
+                    src_ip,
+                    protocol,
+                    username,
+                    password,
+                    login_status,
+                    risk_score,
+                    risk_level,
+                    firewall_action
+                )
+                VALUES(?,?,?,?,?,?,?,?,?,?)
+            """, (
+                session_id,
+                log.get("timestamp"),
+                src_ip,
+                log.get("protocol"),
+                log.get("username"),
+                log.get("password"),
+                eventid,
+                score,
+                level,
+                action
+            ))
+
+            print(
+                f"[LOGIN] {src_ip} | "
+                f"{log.get('username')} | "
+                f"Risk: {score} | {level}"
+            )
+
+
+        # ==================================================
+        # COMMAND EVENTS
+        # ==================================================
+
+        elif eventid == "cowrie.command.input":
+
+            command = log.get("input", "")
+            timestamp = log.get("timestamp")
+
+            command_score = get_command_score(command)
+
+            # Prevent duplicate commands
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM commands
+                WHERE session_id=?
+                AND timestamp=?
+                AND command=?
+            """, (
+                session_id,
+                timestamp,
+                command
+            ))
+
+            exists = cursor.fetchone()[0]
+
+            if exists == 0:
+
+                cursor.execute("""
+                    INSERT INTO commands(
+                        session_id,
+                        timestamp,
+                        command,
+                        command_risk
+                    )
+                    VALUES(?,?,?,?)
+                """, (
+                    session_id,
+                    timestamp,
+                    command,
+                    command_score
+                ))
+
+                print(
+                    f"[COMMAND] {command} | "
+                    f"Risk: {command_score}"
+                )
+
+
+                # ==========================================
+                # UPDATE SESSION RISK
+                # ==========================================
+
+                cursor.execute("""
+                    SELECT risk_score, src_ip
+                    FROM sessions
+                    WHERE session_id=?
+                """, (session_id,))
+
+                row = cursor.fetchone()
+
+                if row:
+
+                    new_score = row["risk_score"] + command_score
+
+                    if new_score > 100:
+                        new_score = 100
+
+                    level, action = get_risk_level(new_score)
+
+                    cursor.execute("""
+                        UPDATE sessions
+                        SET risk_score=?,
+                            risk_level=?,
+                            firewall_action=?
+                        WHERE session_id=?
+                    """, (
+                        new_score,
+                        level,
+                        action,
+                        session_id
+                    ))
+
+                    print(
+                        f"[RISK UPDATE] {session_id} | "
+                        f"Score: {new_score} | "
+                        f"Level: {level} | "
+                        f"Action: {action}"
+                    )
+
+
+                    # ======================================
+                    # FIREWALL RULE
+                    # ======================================
+
+                    if action != "Monitor":
+
+                        cursor.execute("""
+                            SELECT COUNT(*)
+                            FROM firewall_rules
+                            WHERE src_ip=?
+                            AND action=?
+                            AND status='ACTIVE'
+                        """, (
+                            row["src_ip"],
+                            action
+                        ))
+
+                        firewall_exists = cursor.fetchone()[0]
+
+                        if firewall_exists == 0:
+
+                            cursor.execute("""
+                                INSERT INTO firewall_rules(
+                                    timestamp,
+                                    src_ip,
+                                    action,
+                                    reason,
+                                    status
+                                )
+                                VALUES(?,?,?,?,?)
+                            """, (
+                                timestamp,
+                                row["src_ip"],
+                                action,
+                                f"Risk Score {new_score}",
+                                "ACTIVE"
+                            ))
+
+                            print(
+                                f"[FIREWALL] {row['src_ip']} → {action}"
+                            )
+
+        conn.commit()
+
+    except Exception as e:
+
+        print("Error processing event:", e)
+
+    finally:
+
+        conn.close()
+
+
+# ==================================================
+# CONTINUOUS LOG MONITOR
+# ==================================================
+
+def monitor_log():
+
+    print("======================================")
+    print(" HoneyTrack+ Live Log Monitor")
+    print("======================================")
+    print(f"Monitoring: {LOGFILE}")
+    print("Waiting for Cowrie events...")
+    print()
+
+    with open(LOGFILE, "r") as file:
+
+        # Go to the end of the current log file.
+        # New Cowrie events will be read from here.
+        file.seek(0, 2)
+
+        while True:
+
+            line = file.readline()
+
+            if not line:
+
+                time.sleep(0.5)
+                continue
+
+            try:
+
+                log = json.loads(line)
+
+                process_event(log)
+
+            except json.JSONDecodeError:
+
+                print("Invalid JSON event skipped.")
+
+            except Exception as e:
+
+                print("Error reading log:", e)
+
+
+# ================= START =================
+
+if __name__ == "__main__":
+
+    monitor_log()
