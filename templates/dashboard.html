@@ -1,300 +1,904 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HoneyTrack | Security Operations</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>HoneyTrack | Security Operations Center</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 
 <body>
-<div class="app-shell">
 
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
+<div class="app-container">
+
+    <!-- ================= SIDEBAR ================= -->
+
+    <aside class="sidebar">
+
         <div class="brand">
-            <div class="brand-icon"><i class="bi bi-shield-check"></i></div>
-            <div>
-                <h5>HoneyTrack</h5>
-                <span>Security Operations</span>
+
+            <div class="brand-icon">
+                🍯
             </div>
+
+            <div class="brand-text">
+                <h1>HoneyTrack</h1>
+                <span>SECURITY SOC</span>
+            </div>
+
         </div>
 
-        <div class="sidebar-section">MONITORING</div>
-        <nav class="sidebar-nav">
-            <a href="#overview" class="active">
-                <i class="bi bi-grid-1x2-fill"></i> Overview
-            </a>
-            <a href="#sessions">
-                <i class="bi bi-activity"></i> Sessions
-            </a>
-            <a href="#commands">
-                <i class="bi bi-terminal"></i> Command Logs
-            </a>
-            <a href="#firewall">
-                <i class="bi bi-shield-lock"></i> Firewall
-            </a>
-        </nav>
 
-        <div class="sidebar-section">SYSTEM</div>
-        <nav class="sidebar-nav">
-            <a href="#overview">
-                <i class="bi bi-bar-chart-line"></i> Analytics
-            </a>
-            <a href="#overview">
-                <i class="bi bi-gear"></i> Settings
-            </a>
-        </nav>
+        <div class="menu-section">
 
-        <div class="sidebar-footer">
-            <div class="online-dot"></div>
-            <div>
-                <strong>System Online</strong>
-                <span>Honeypot active</span>
+            <div class="menu-title">
+                MONITORING
             </div>
+
+            <a href="#" class="menu-item active">
+                <span>▣</span>
+                Dashboard
+            </a>
+
+            <a href="#" class="menu-item">
+                <span>◉</span>
+                Honeypot Sessions
+            </a>
+
+            <a href="#" class="menu-item">
+                <span>⌁</span>
+                Command Monitor
+            </a>
+
         </div>
+
+
+        <div class="menu-section">
+
+            <div class="menu-title">
+                SECURITY
+            </div>
+
+            <a href="#" class="menu-item">
+                <span>⚠</span>
+                Threat Detection
+            </a>
+
+            <a href="#" class="menu-item">
+                <span>⛨</span>
+                Firewall
+            </a>
+
+            <a href="#" class="menu-item">
+                <span>▤</span>
+                Security Logs
+            </a>
+
+        </div>
+
+
+        <div class="menu-section">
+
+            <div class="menu-title">
+                SYSTEM
+            </div>
+
+            <a href="#" class="menu-item">
+                <span>⚙</span>
+                Configuration
+            </a>
+
+        </div>
+
+
+        <div class="sidebar-bottom">
+
+            <div class="sensor-status">
+
+                <span class="status-dot"></span>
+
+                <div>
+                    <strong>Sensor Online</strong>
+                    <small>Cowrie Honeypot</small>
+                </div>
+
+            </div>
+
+        </div>
+
     </aside>
 
-    <!-- Main content -->
+
+    <!-- ================= MAIN ================= -->
+
     <main class="main-content">
 
+
+        <!-- TOP HEADER -->
+
         <header class="topbar">
-            <button class="menu-btn" id="menuBtn" aria-label="Toggle sidebar">
-                <i class="bi bi-list"></i>
-            </button>
 
             <div>
-                <h4>Dashboard Overview</h4>
-                <p>Real-time honeypot monitoring</p>
+
+                <div class="breadcrumb">
+                    SECURITY / MONITORING
+                </div>
+
+                <h2>
+                    Security Operations Dashboard
+                </h2>
+
+                <p>
+                    Real-time honeypot activity and intrusion prevention monitoring
+                </p>
+
             </div>
 
-            <div class="topbar-actions">
-                <span class="live-status">
-                    <span class="pulse-dot"></span> LIVE
-                </span>
-                <button class="icon-btn" id="refreshBtn" title="Refresh dashboard">
-                    <i class="bi bi-arrow-clockwise"></i>
-                </button>
+
+            <div class="topbar-right">
+
+                <div class="live-indicator">
+
+                    <span class="live-dot"></span>
+
+                    SYSTEM ONLINE
+
+                </div>
+
+                <div class="sensor">
+
+                    <span>●</span>
+
+                    KALI SENSOR
+
+                </div>
+
             </div>
+
         </header>
 
-        <div class="content-area">
 
-            <section class="welcome-row" id="overview">
+        <!-- ================= STATISTICS ================= -->
+
+        <section class="stats-grid">
+
+
+            <div class="stat-card">
+
+                <div class="stat-top">
+
+                    <span class="stat-title">
+                        TOTAL SESSIONS
+                    </span>
+
+                    <div class="stat-icon blue">
+                        ◉
+                    </div>
+
+                </div>
+
+                <div class="stat-value">
+                    {{ total_sessions }}
+                </div>
+
+                <div class="stat-description">
+                    SSH connections captured
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-top">
+
+                    <span class="stat-title">
+                        COMMANDS CAPTURED
+                    </span>
+
+                    <div class="stat-icon purple">
+                        ⌁
+                    </div>
+
+                </div>
+
+                <div class="stat-value">
+                    {{ total_commands }}
+                </div>
+
+                <div class="stat-description">
+                    Commands analyzed
+                </div>
+
+            </div>
+
+
+            <div class="stat-card danger-card">
+
+                <div class="stat-top">
+
+                    <span class="stat-title">
+                        HIGH RISK
+                    </span>
+
+                    <div class="stat-icon red">
+                        ⚠
+                    </div>
+
+                </div>
+
+                <div class="stat-value danger-text">
+                    {{ high_risk }}
+                </div>
+
+                <div class="stat-description">
+                    Suspicious sessions detected
+                </div>
+
+            </div>
+
+
+            <div class="stat-card warning-card">
+
+                <div class="stat-top">
+
+                    <span class="stat-title">
+                        BLOCKED
+                    </span>
+
+                    <div class="stat-icon orange">
+                        ⛨
+                    </div>
+
+                </div>
+
+                <div class="stat-value warning-text">
+                    {{ blocked }}
+                </div>
+
+                <div class="stat-description">
+                    Automated firewall actions
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= ANALYTICS ================= -->
+
+        <section class="analytics-grid">
+
+
+            <!-- THREAT OVERVIEW -->
+
+            <div class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+
+                        <h3>Threat Overview</h3>
+
+                        <p>
+                            Risk classification of detected activity
+                        </p>
+
+                    </div>
+
+                    <span class="panel-badge">
+                        LIVE
+                    </span>
+
+                </div>
+
+
+                <div class="threat-chart">
+
+
+                    <div class="risk-item">
+
+                        <div class="risk-label">
+
+                            <span class="risk-name">
+                                Critical
+                            </span>
+
+                            <span class="risk-value critical-color">
+                                CRITICAL
+                            </span>
+
+                        </div>
+
+                        <div class="progress-track">
+
+                            <div class="progress critical-progress"></div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="risk-item">
+
+                        <div class="risk-label">
+
+                            <span class="risk-name">
+                                High
+                            </span>
+
+                            <span class="risk-value high-color">
+                                HIGH
+                            </span>
+
+                        </div>
+
+                        <div class="progress-track">
+
+                            <div class="progress high-progress"></div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="risk-item">
+
+                        <div class="risk-label">
+
+                            <span class="risk-name">
+                                Medium
+                            </span>
+
+                            <span class="risk-value medium-color">
+                                MEDIUM
+                            </span>
+
+                        </div>
+
+                        <div class="progress-track">
+
+                            <div class="progress medium-progress"></div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="risk-item">
+
+                        <div class="risk-label">
+
+                            <span class="risk-name">
+                                Low
+                            </span>
+
+                            <span class="risk-value low-color">
+                                LOW
+                            </span>
+
+                        </div>
+
+                        <div class="progress-track">
+
+                            <div class="progress low-progress"></div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- SECURITY STATUS -->
+
+            <div class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+
+                        <h3>Security Status</h3>
+
+                        <p>
+                            HoneyTrack protection layer
+                        </p>
+
+                    </div>
+
+                    <span class="shield">
+                        ⛨
+                    </span>
+
+                </div>
+
+
+                <div class="security-status-list">
+
+
+                    <div class="security-status-item">
+
+                        <div class="status-left">
+
+                            <span class="check">
+                                ✓
+                            </span>
+
+                            <div>
+
+                                <strong>
+                                    Cowrie Honeypot
+                                </strong>
+
+                                <small>
+                                    SSH monitoring active
+                                </small>
+
+                            </div>
+
+                        </div>
+
+                        <span class="online-text">
+                            ONLINE
+                        </span>
+
+                    </div>
+
+
+                    <div class="security-status-item">
+
+                        <div class="status-left">
+
+                            <span class="check">
+                                ✓
+                            </span>
+
+                            <div>
+
+                                <strong>
+                                    Log Parser
+                                </strong>
+
+                                <small>
+                                    Event processing active
+                                </small>
+
+                            </div>
+
+                        </div>
+
+                        <span class="online-text">
+                            ACTIVE
+                        </span>
+
+                    </div>
+
+
+                    <div class="security-status-item">
+
+                        <div class="status-left">
+
+                            <span class="check">
+                                ✓
+                            </span>
+
+                            <div>
+
+                                <strong>
+                                    Risk Engine
+                                </strong>
+
+                                <small>
+                                    Threat scoring enabled
+                                </small>
+
+                            </div>
+
+                        </div>
+
+                        <span class="online-text">
+                            ACTIVE
+                        </span>
+
+                    </div>
+
+
+                    <div class="security-status-item">
+
+                        <div class="status-left">
+
+                            <span class="check">
+                                ✓
+                            </span>
+
+                            <div>
+
+                                <strong>
+                                    Firewall
+                                </strong>
+
+                                <small>
+                                    Automated response enabled
+                                </small>
+
+                            </div>
+
+                        </div>
+
+                        <span class="online-text">
+                            ACTIVE
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= RECENT SESSIONS ================= -->
+
+        <section class="panel">
+
+            <div class="panel-header">
+
                 <div>
-                    <div class="eyebrow">SECURITY OPERATIONS CENTER</div>
-                    <h1>HoneyTrack Dashboard</h1>
-                    <p>Track suspicious activity and protect your honeypot infrastructure.</p>
-                </div>
-                <div class="system-status">
-                    <i class="bi bi-check-circle-fill"></i>
-                    All systems operational
-                </div>
-            </section>
 
-            <!-- Statistics -->
-            <section class="stats-grid">
+                    <h3>Recent Honeypot Sessions</h3>
 
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <span>Total Sessions</span>
-                        <div class="stat-icon blue"><i class="bi bi-activity"></i></div>
-                    </div>
-                    <h2>{{ total_sessions }}</h2>
-                    <div class="stat-footer"><span class="stat-label">Recorded sessions</span></div>
+                    <p>
+                        Latest SSH connections detected by Cowrie
+                    </p>
+
                 </div>
 
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <span>Total Commands</span>
-                        <div class="stat-icon purple"><i class="bi bi-terminal"></i></div>
-                    </div>
-                    <h2>{{ total_commands }}</h2>
-                    <div class="stat-footer"><span class="stat-label">Captured commands</span></div>
-                </div>
+                <span class="record-count">
+                    {{ total_sessions }} RECORDS
+                </span>
 
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <span>High Risk</span>
-                        <div class="stat-icon red"><i class="bi bi-exclamation-triangle"></i></div>
-                    </div>
-                    <h2>{{ high_risk }}</h2>
-                    <div class="stat-footer"><span class="stat-label danger-text">Threats detected</span></div>
-                </div>
+            </div>
 
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <span>Blocked</span>
-                        <div class="stat-icon green"><i class="bi bi-shield-check"></i></div>
-                    </div>
-                    <h2>{{ blocked }}</h2>
-                    <div class="stat-footer"><span class="stat-label success-text">Firewall actions</span></div>
-                </div>
 
-            </section>
+            <div class="table-container">
 
-            <!-- Sessions -->
-            <section class="dashboard-card" id="sessions">
-                <div class="section-header">
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>SESSION ID</th>
+
+                            <th>SOURCE IP</th>
+
+                            <th>USERNAME</th>
+
+                            <th>RISK SCORE</th>
+
+                            <th>RISK LEVEL</th>
+
+                            <th>FIREWALL ACTION</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                    {% for session in sessions %}
+
+                        <tr>
+
+                            <td>
+
+                                <span class="session-id">
+                                    {{ session.session_id }}
+                                </span>
+
+                            </td>
+
+                            <td>
+
+                                <span class="ip-address">
+                                    {{ session.src_ip }}
+                                </span>
+
+                            </td>
+
+                            <td>
+
+                                <span class="username">
+                                    {{ session.username }}
+                                </span>
+
+                            </td>
+
+                            <td>
+
+                                <div class="risk-score">
+
+                                    <strong>
+                                        {{ session.risk_score }}
+                                    </strong>
+
+                                    <div class="score-bar">
+
+                                        <div class="score-fill"
+                                             style="width: {{ session.risk_score }}%;">
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </td>
+
+                            <td>
+
+                                <span class="risk-badge
+                                    {{ session.risk_level|lower }}">
+
+                                    {{ session.risk_level }}
+
+                                </span>
+
+                            </td>
+
+                            <td>
+
+                                <span class="firewall-action">
+
+                                    {{ session.firewall_action }}
+
+                                </span>
+
+                            </td>
+
+                        </tr>
+
+                    {% else %}
+
+                        <tr>
+
+                            <td colspan="6" class="empty">
+
+                                No sessions recorded.
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= LOWER GRID ================= -->
+
+        <section class="lower-grid">
+
+
+            <!-- COMMANDS -->
+
+            <div class="panel">
+
+                <div class="panel-header">
+
                     <div>
-                        <h3><i class="bi bi-activity"></i> Recent Sessions</h3>
-                        <p>Latest connections to the honeypot</p>
+
+                        <h3>Command Activity</h3>
+
+                        <p>
+                            Commands executed inside honeypot
+                        </p>
+
                     </div>
-                    <span class="record-count">{{ sessions|length }} records</span>
+
+                    <span class="panel-badge">
+                        MONITORING
+                    </span>
+
                 </div>
 
-                <div class="table-responsive">
-                    <table class="data-table">
+
+                <div class="table-container">
+
+                    <table>
+
                         <thead>
-                            <tr>
-                                <th>SESSION</th>
-                                <th>IP ADDRESS</th>
-                                <th>USERNAME</th>
-                                <th>RISK SCORE</th>
-                                <th>RISK LEVEL</th>
-                                <th>FIREWALL ACTION</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for s in sessions %}
-                            <tr>
-                                <td><span class="session-id">{{ s.session_id }}</span></td>
-                                <td><span class="ip-address">{{ s.src_ip }}</span></td>
-                                <td>{{ s.username }}</td>
-                                <td><strong>{{ s.risk_score }}</strong></td>
-                                <td>
-                                    {% if s.risk_level == "LOW" %}
-                                        <span class="risk-badge low"><i class="bi bi-circle-fill"></i> LOW</span>
-                                    {% elif s.risk_level == "MEDIUM" %}
-                                        <span class="risk-badge medium"><i class="bi bi-circle-fill"></i> MEDIUM</span>
-                                    {% elif s.risk_level == "HIGH" %}
-                                        <span class="risk-badge high"><i class="bi bi-circle-fill"></i> HIGH</span>
-                                    {% else %}
-                                        <span class="risk-badge unknown">{{ s.risk_level }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ s.firewall_action }}</td>
-                            </tr>
-                        {% else %}
-                            <tr><td colspan="6" class="empty-state">No sessions recorded yet.</td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
 
-            <!-- Commands -->
-            <section class="dashboard-card" id="commands">
-                <div class="section-header">
-                    <div>
-                        <h3><i class="bi bi-terminal"></i> Recent Commands</h3>
-                        <p>Commands captured from active sessions</p>
-                    </div>
-                    <span class="record-count">{{ commands|length }} records</span>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
                             <tr>
+
                                 <th>SESSION</th>
+
                                 <th>COMMAND</th>
+
                                 <th>RISK</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for c in commands %}
-                            <tr>
-                                <td><span class="session-id">{{ c.session_id }}</span></td>
-                                <td><code class="command-code">{{ c.command }}</code></td>
-                                <td><span class="command-risk">{{ c.command_risk }}</span></td>
-                            </tr>
-                        {% else %}
-                            <tr><td colspan="3" class="empty-state">No commands recorded yet.</td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
 
-            <!-- Firewall -->
-            <section class="dashboard-card" id="firewall">
-                <div class="section-header">
-                    <div>
-                        <h3><i class="bi bi-shield-lock"></i> Active Firewall Rules</h3>
-                        <p>Network access control and blocked threats</p>
-                    </div>
-                    <span class="record-count">{{ firewall_rules|length }} rules</span>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>TIME</th>
-                                <th>IP ADDRESS</th>
-                                <th>ACTION</th>
-                                <th>REASON</th>
-                                <th>STATUS</th>
-                                <th>EXPIRES</th>
                             </tr>
+
                         </thead>
+
+
                         <tbody>
-                        {% for rule in firewall_rules %}
+
+                        {% for command in commands %}
+
                             <tr>
-                                <td>{{ rule.timestamp }}</td>
-                                <td><span class="ip-address">{{ rule.src_ip }}</span></td>
+
                                 <td>
-                                    {% if rule.action == "Permanent Block" %}
-                                        <span class="action-badge permanent"><i class="bi bi-lock-fill"></i> {{ rule.action }}</span>
-                                    {% else %}
-                                        <span class="action-badge temporary"><i class="bi bi-clock"></i> {{ rule.action }}</span>
-                                    {% endif %}
+
+                                    <span class="session-id">
+                                        {{ command.session_id }}
+                                    </span>
+
                                 </td>
-                                <td>{{ rule.reason }}</td>
-                                <td><span class="status-badge">{{ rule.status }}</span></td>
-                                <td>{{ rule.expires_at if rule.expires_at else "Never" }}</td>
+
+                                <td>
+
+                                    <code>
+                                        {{ command.command }}
+                                    </code>
+
+                                </td>
+
+                                <td>
+
+                                    <span class="command-risk">
+                                        {{ command.command_risk }}
+                                    </span>
+
+                                </td>
+
                             </tr>
+
                         {% else %}
-                            <tr><td colspan="6" class="empty-state">No active firewall rules.</td></tr>
+
+                            <tr>
+
+                                <td colspan="3" class="empty">
+
+                                    No commands recorded.
+
+                                </td>
+
+                            </tr>
+
                         {% endfor %}
+
                         </tbody>
+
                     </table>
+
                 </div>
-            </section>
 
-            <footer class="footer">
-                <span>HoneyTrack Security Platform</span>
-                <span><i class="bi bi-shield-check"></i> Monitoring active</span>
-            </footer>
+            </div>
 
-        </div>
+
+            <!-- FIREWALL -->
+
+            <div class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+
+                        <h3>Firewall Response</h3>
+
+                        <p>
+                            Automated intrusion prevention
+                        </p>
+
+                    </div>
+
+                    <span class="panel-badge danger-badge">
+                        ACTIVE
+                    </span>
+
+                </div>
+
+
+                <div class="firewall-list">
+
+                {% for rule in firewall_rules %}
+
+                    <div class="firewall-item">
+
+                        <div class="firewall-icon">
+                            ⛨
+                        </div>
+
+                        <div class="firewall-info">
+
+                            <strong>
+                                {{ rule.src_ip }}
+                            </strong>
+
+                            <small>
+                                {{ rule.reason }}
+                            </small>
+
+                        </div>
+
+                        <span class="blocked-badge">
+                            {{ rule.action }}
+                        </span>
+
+                    </div>
+
+                {% else %}
+
+                    <div class="empty">
+
+                        No active firewall rules.
+
+                    </div>
+
+                {% endfor %}
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= FOOTER ================= -->
+
+        <footer>
+
+            <div class="footer-line"></div>
+
+            <p>
+                HONEYTRACK SECURITY MONITORING PLATFORM
+            </p>
+
+            <span>
+                Enhanced Multi-Layered Honeypot •
+                Integrated Network Monitoring •
+                Automated Intrusion Prevention
+            </span>
+
+        </footer>
+
+
     </main>
+
 </div>
 
+
+<!-- ================= AUTO REFRESH ================= -->
+
 <script>
-    const menuBtn = document.getElementById("menuBtn");
-    const sidebar = document.getElementById("sidebar");
 
-    menuBtn.addEventListener("click", () => {
-        sidebar.classList.toggle("open");
-    });
+    /*
+       Automatically refresh dashboard every 30 seconds
+       to display newly parsed Cowrie events.
+    */
 
-    document.getElementById("refreshBtn").addEventListener("click", () => {
-        window.location.reload();
-    });
+    setTimeout(function () {
 
-    document.querySelectorAll(".sidebar-nav a").forEach(link => {
-        link.addEventListener("click", () => {
-            if (window.innerWidth < 992) {
-                sidebar.classList.remove("open");
-            }
-        });
-    });
+        location.reload();
+
+    }, 30000);
+
 </script>
+
+
 </body>
 </html>
