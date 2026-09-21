@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime, timedelta
 
 from risk_engine import calculate_risk
-from command_risk import get_command_score
+from command_risk import get_command_score, sequence_risk
 from alerts import generate_alert
 
 
@@ -173,78 +173,132 @@ for session_id, data in sessions.items():
         )
 
 
-        # ================= COMMAND BEHAVIOUR =================
+        # ================= GET COMMANDS =================
 
         cursor.execute("""
-            SELECT
-                COALESCE(SUM(command_risk), 0),
-                COUNT(
-                    CASE
-                        WHEN command_risk >= 10
-                        THEN 1
-                    END
-                )
+            SELECT command, command_risk
             FROM commands
             WHERE session_id=?
-        """, (session_id,))
-
-        result = cursor.fetchone()
-
-        command_risk = result[0] or 0
-        suspicious_commands = result[1] or 0
-
-
-        # ================= COMMAND CATEGORIES =================
-
-        cursor.execute("""
-            SELECT command
-            FROM commands
-            WHERE session_id=?
+            ORDER BY timestamp
         """, (session_id,))
 
         command_rows = cursor.fetchall()
 
+        command_list = [
+            row["command"]
+            for row in command_rows
+        ]
+
+
+        # ================= COMMAND RISK =================
+
+        command_risk = sum(
+            row["command_risk"]
+            for row in command_rows
+        )
+
+
+        # ================= SUSPICIOUS COMMANDS =================
+
+        suspicious_commands = sum(
+            1
+            for row in command_rows
+            if row["command_risk"] >= 10
+        )
+
+
+        # ================= COMMAND SEQUENCE RISK =================
+
+        sequence_score = sequence_risk(command_list)
+
+
+        # ================= COMMAND CATEGORIES =================
+
         categories = set()
 
-        for row in command_rows:
+        for command in command_list:
 
-            command = row["command"].lower().strip()
+            command = command.lower().strip()
 
             if command.startswith(("sudo", "su")):
+
                 categories.add("privilege")
 
             elif command.startswith(("wget", "curl")):
+
                 categories.add("download")
 
             elif command.startswith("scp"):
+
                 categories.add("transfer")
 
-            elif command.startswith(("rm", "shred")):
+            elif command.startswith(("rm", "shred", "mkfs")):
+
                 categories.add("destructive")
 
             elif command.startswith(("chmod", "chown")):
+
                 categories.add("permission")
 
             elif command.startswith((
                 "netstat",
                 "ifconfig",
                 "ip",
-                "ss"
+                "ss",
+                "route",
+                "arp"
             )):
+
                 categories.add("network")
 
             elif command.startswith((
                 "cat",
                 "find",
-                "ps"
+                "ps",
+                "grep",
+                "locate",
+                "whoami",
+                "id",
+                "uname",
+                "hostname"
             )):
+
                 categories.add("discovery")
 
+            elif command.startswith((
+                "bash",
+                "sh",
+                "python",
+                "python3",
+                "perl"
+            )):
+
+                categories.add("execution")
+
+            elif command.startswith((
+                "kill",
+                "pkill",
+                "systemctl"
+            )):
+
+                categories.add("process_control")
+
             else:
+
                 categories.add("normal")
 
 
         command_categories = len(categories)
+
+
+        # ================= TOTAL COMMAND CONTRIBUTION =================
+
+        # Individual command risk + behavioural sequence risk
+
+        total_command_risk = min(
+            command_risk + sequence_score,
+            50
+        )
 
 
         # ================= ADVANCED RISK CALCULATION =================
@@ -266,7 +320,7 @@ for session_id, data in sessions.items():
 
             previous_attacks=0,
 
-            command_risk=command_risk,
+            command_risk=total_command_risk,
 
             suspicious_commands=suspicious_commands,
 
@@ -276,7 +330,10 @@ for session_id, data in sessions.items():
 
         # ================= FINAL SCORE =================
 
-        final_score = score
+        final_score = min(
+            100,
+            score
+        )
 
 
         # ================= INSERT / UPDATE SESSION =================
