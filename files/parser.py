@@ -1,4 +1,3 @@
-```python
 import json
 import sqlite3
 from datetime import datetime, timedelta
@@ -10,7 +9,7 @@ from alerts import generate_alert
 
 # ================= CONFIGURATION =================
 
-LOGFILE = "/home/neha/cowrie/var/log/cowrie/cowrie.json"
+LOGFILE = "/home/devika2007/cowrie/var/log/cowrie/cowrie.json"
 DB_PATH = "database/honeytrack.db"
 
 
@@ -30,6 +29,7 @@ with open(LOGFILE, "r") as file:
     for line in file:
 
         try:
+
             log = json.loads(line)
 
             eventid = log.get("eventid", "")
@@ -85,25 +85,27 @@ with open(LOGFILE, "r") as file:
                 )
 
                 if eventid == "cowrie.login.failed":
+
                     session["failed_attempts"] += 1
 
                 elif eventid == "cowrie.login.success":
+
                     session["successful"] = True
 
         except Exception as e:
+
             print("Error reading login:", e)
 
 
 # ================= COMMAND INSERTION =================
 # Commands must be inserted before risk calculation.
-# This ensures newly observed commands affect the
-# current session risk score.
 
 with open(LOGFILE, "r") as file:
 
     for line in file:
 
         try:
+
             log = json.loads(line)
 
             if log.get("eventid") != "cowrie.command.input":
@@ -119,6 +121,7 @@ with open(LOGFILE, "r") as file:
             command_score = get_command_score(command)
 
             # Avoid duplicate command entries
+
             cursor.execute("""
                 SELECT COUNT(*)
                 FROM commands
@@ -151,6 +154,7 @@ with open(LOGFILE, "r") as file:
                 ))
 
         except Exception as e:
+
             print("Error reading command:", e)
 
 
@@ -168,52 +172,112 @@ for session_id, data in sessions.items():
             else "cowrie.login.failed"
         )
 
-        # ================= AUTHENTICATION RISK =================
 
-        score, level, action = calculate_risk(
-            username=data["username"],
-            password=data["password"],
-            eventid=final_event,
-            protocol=data["protocol"],
-            attempts=max(1, data["failed_attempts"]),
-            previous_attacks=0
-        )
-
-        # ================= COMMAND RISK =================
+        # ================= COMMAND BEHAVIOUR =================
 
         cursor.execute("""
-            SELECT COALESCE(SUM(command_risk), 0)
+            SELECT
+                COALESCE(SUM(command_risk), 0),
+                COUNT(
+                    CASE
+                        WHEN command_risk >= 10
+                        THEN 1
+                    END
+                )
             FROM commands
             WHERE session_id=?
         """, (session_id,))
 
-        command_risk = cursor.fetchone()[0]
+        result = cursor.fetchone()
+
+        command_risk = result[0] or 0
+        suspicious_commands = result[1] or 0
+
+
+        # ================= COMMAND CATEGORIES =================
+
+        cursor.execute("""
+            SELECT command
+            FROM commands
+            WHERE session_id=?
+        """, (session_id,))
+
+        command_rows = cursor.fetchall()
+
+        categories = set()
+
+        for row in command_rows:
+
+            command = row["command"].lower().strip()
+
+            if command.startswith(("sudo", "su")):
+                categories.add("privilege")
+
+            elif command.startswith(("wget", "curl")):
+                categories.add("download")
+
+            elif command.startswith("scp"):
+                categories.add("transfer")
+
+            elif command.startswith(("rm", "shred")):
+                categories.add("destructive")
+
+            elif command.startswith(("chmod", "chown")):
+                categories.add("permission")
+
+            elif command.startswith((
+                "netstat",
+                "ifconfig",
+                "ip",
+                "ss"
+            )):
+                categories.add("network")
+
+            elif command.startswith((
+                "cat",
+                "find",
+                "ps"
+            )):
+                categories.add("discovery")
+
+            else:
+                categories.add("normal")
+
+
+        command_categories = len(categories)
+
+
+        # ================= ADVANCED RISK CALCULATION =================
+
+        score, level, action = calculate_risk(
+
+            username=data["username"],
+
+            password=data["password"],
+
+            eventid=final_event,
+
+            protocol=data["protocol"],
+
+            attempts=max(
+                1,
+                data["failed_attempts"]
+            ),
+
+            previous_attacks=0,
+
+            command_risk=command_risk,
+
+            suspicious_commands=suspicious_commands,
+
+            command_categories=command_categories
+        )
+
 
         # ================= FINAL SCORE =================
 
-        final_score = min(100, score + command_risk)
+        final_score = score
 
-        # ================= FINAL RISK LEVEL =================
-
-        if final_score < 30:
-
-            level = "LOW"
-            action = "Monitor"
-
-        elif final_score < 60:
-
-            level = "MEDIUM"
-            action = "Alert + Block 30 min"
-
-        elif final_score < 80:
-
-            level = "HIGH"
-            action = "Block 30 min"
-
-        else:
-
-            level = "CRITICAL"
-            action = "Permanent Block"
 
         # ================= INSERT / UPDATE SESSION =================
 
@@ -224,6 +288,7 @@ for session_id, data in sessions.items():
         """, (session_id,))
 
         existing = cursor.fetchone()
+
 
         if existing:
 
@@ -281,6 +346,7 @@ for session_id, data in sessions.items():
                 action
             ))
 
+
         # ================= ADMIN ALERT =================
 
         generate_alert(
@@ -290,6 +356,7 @@ for session_id, data in sessions.items():
             risk_level=level,
             action=action
         )
+
 
         # ================= FIREWALL RULE =================
 
@@ -308,20 +375,26 @@ for session_id, data in sessions.items():
 
             exists = cursor.fetchone()[0]
 
+
             if exists == 0:
 
                 # Permanent block has no expiry
+
                 if action == "Permanent Block":
 
                     expires_at = None
 
                 # Temporary block expires after 30 minutes
+
                 else:
 
                     try:
 
                         dt = datetime.fromisoformat(
-                            data["timestamp"].replace("Z", "+00:00")
+                            data["timestamp"].replace(
+                                "Z",
+                                "+00:00"
+                            )
                         )
 
                         expires_at = (
@@ -334,6 +407,7 @@ for session_id, data in sessions.items():
                             datetime.now()
                             + timedelta(minutes=30)
                         ).isoformat()
+
 
                 cursor.execute("""
                     INSERT INTO firewall_rules(
@@ -354,6 +428,7 @@ for session_id, data in sessions.items():
                     expires_at
                 ))
 
+
     except Exception as e:
 
         print(
@@ -368,4 +443,3 @@ conn.commit()
 conn.close()
 
 print("HoneyTrack database updated successfully.")
-```
