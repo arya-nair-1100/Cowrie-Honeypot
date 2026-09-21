@@ -65,7 +65,7 @@ def dashboard():
     conn.close()
 
     return render_template(
-        "dashboard.html",
+        "dashboard.html","style.css",
         sessions=sessions,
         commands=commands,
         firewall_rules=firewall_rules,
