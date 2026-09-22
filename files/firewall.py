@@ -1,365 +1,182 @@
 import sqlite3
-import subprocess
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+
+DATABASE = "database/honeytrack.db"
 
 
-DB_PATH = "database/honeytrack.db"
-TEMP_BLOCK_MINUTES = 30
+def get_firewall_action(risk_score):
+    """
+    Decide the firewall action based on the risk score.
+    """
+
+    if risk_score < 30:
+        return "Monitor"
+
+    elif risk_score < 60:
+        return "Alert + Block 30 min"
+
+    elif risk_score < 80:
+        return "Block 30 min"
+
+    else:
+        return "Permanent Block"
 
 
-# ---------------------------------------------------------
-# Check whether an IP is already blocked by UFW
-# ---------------------------------------------------------
-def is_ip_blocked(ip):
-    try:
-        result = subprocess.run(
-            ["sudo", "ufw", "status"],
-            capture_output=True,
-            text=True,
-            check=False
-        )
+def get_risk_level(risk_score):
+    """
+    Convert risk score into a risk level.
+    """
 
-        if result.returncode != 0:
-            print("Unable to check UFW status.")
-            return False
+    if risk_score < 30:
+        return "LOW"
 
-        for line in result.stdout.splitlines():
-            if "DENY" in line and ip in line:
-                return True
+    elif risk_score < 60:
+        return "MEDIUM"
 
-        return False
+    elif risk_score < 80:
+        return "HIGH"
 
-    except Exception as e:
-        print("Error checking firewall:", e)
-        return False
+    else:
+        return "CRITICAL"
 
 
-# ---------------------------------------------------------
-# Block an IP using UFW
-# ---------------------------------------------------------
-def block_ip(ip):
+def create_firewall_rule(src_ip, risk_score, session_id=None):
+    """
+    Create a firewall rule in the HoneyTrack database.
+    """
 
-    # Never block localhost during testing
-    if ip in ("127.0.0.1", "::1"):
-        print(f"Safety check: {ip} will not be blocked.")
-        return False
+    action = get_firewall_action(risk_score)
+    risk_level = get_risk_level(risk_score)
 
-    # Avoid duplicate UFW rules
-    if is_ip_blocked(ip):
-        print(f"{ip} is already blocked.")
-        return True
+    # LOW risk does not create a firewall rule
+    if action == "Monitor":
+        print(f"[FIREWALL] {src_ip} -> Monitor")
+        return action
 
-    try:
-        result = subprocess.run(
-            ["sudo", "ufw", "deny", "from", ip],
-            capture_output=True,
-            text=True,
-            check=False
-        )
+    # Calculate expiry time
+    expires_at = None
 
-        if result.returncode == 0:
-            print(f"Firewall: {ip} blocked successfully.")
-            return True
+    if action == "Alert + Block 30 min" or action == "Block 30 min":
+        expires_at = (
+            datetime.now() + timedelta(minutes=30)
+        ).strftime("%Y-%m-%d %H:%M:%S")
 
-        print("UFW error:", result.stderr.strip())
-        return False
+    # Permanent block has no expiry
+    if action == "Permanent Block":
+        expires_at = None
 
-    except Exception as e:
-        print("Error blocking IP:", e)
-        return False
+    reason = (
+        f"Risk Level: {risk_level}, "
+        f"Risk Score: {risk_score}"
+    )
 
-
-# ---------------------------------------------------------
-# Unblock an IP using UFW
-# ---------------------------------------------------------
-def unblock_ip(ip):
-
-    try:
-        result = subprocess.run(
-            ["sudo", "ufw", "delete", "deny", "from", ip],
-            capture_output=True,
-            text=True,
-            check=False
-        )
-
-        if result.returncode == 0:
-            print(f"Firewall: {ip} unblocked successfully.")
-            return True
-
-        print("UFW error:", result.stderr.strip())
-        return False
-
-    except Exception as e:
-        print("Error unblocking IP:", e)
-        return False
-
-
-# ---------------------------------------------------------
-# Record firewall action in database
-# ---------------------------------------------------------
-def record_firewall_action(ip, action, reason, expires_at=None):
-
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
-    # Check for an existing ACTIVE rule
+    # Check if the same active rule already exists
     cursor.execute("""
-        SELECT id, action
+        SELECT COUNT(*)
         FROM firewall_rules
         WHERE src_ip = ?
+        AND action = ?
         AND status = 'ACTIVE'
-    """, (ip,))
+    """, (src_ip, action))
 
-    existing = cursor.fetchone()
+    exists = cursor.fetchone()[0]
 
-    if existing:
+    if exists == 0:
 
-        existing_id, existing_action = existing
-
-        # If it is already permanently blocked,
-        # do not replace it with a temporary block.
-        if existing_action == "Permanent Block":
-            conn.close()
-            return
-
-        # If current action is Permanent Block,
-        # upgrade the existing rule.
-        if action == "Permanent Block":
-            cursor.execute("""
-                UPDATE firewall_rules
-                SET action = ?,
-                    reason = ?,
-                    expires_at = NULL,
-                    status = 'ACTIVE'
-                WHERE id = ?
-            """, (
+        cursor.execute("""
+            INSERT INTO firewall_rules
+            (
+                timestamp,
+                src_ip,
                 action,
                 reason,
-                existing_id
-            ))
-
-        conn.commit()
-        conn.close()
-        return
-
-    # No active rule exists, so create one
-    timestamp = datetime.now(timezone.utc).isoformat()
-
-    cursor.execute("""
-        INSERT INTO firewall_rules
-        (
-            timestamp,
+                status,
+                expires_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             src_ip,
             action,
             reason,
-            status,
+            "ACTIVE",
             expires_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (
-        timestamp,
-        ip,
-        action,
-        reason,
-        "ACTIVE",
-        expires_at
-    ))
+        ))
 
-    conn.commit()
+        conn.commit()
+
+        print()
+        print("========== FIREWALL ACTION ==========")
+        print(f"Session ID : {session_id}")
+        print(f"Source IP  : {src_ip}")
+        print(f"Risk Score : {risk_score}")
+        print(f"Risk Level : {risk_level}")
+        print(f"Action     : {action}")
+        print(f"Expires    : {expires_at if expires_at else 'Never'}")
+        print("======================================")
+        print()
+
+    else:
+        print(
+            f"[FIREWALL] Existing active rule for "
+            f"{src_ip}: {action}"
+        )
+
     conn.close()
 
+    return action
 
-# ---------------------------------------------------------
-# Apply firewall action
-# ---------------------------------------------------------
-def apply_firewall_action(ip, action, risk_score=None):
 
-    # LOW → Monitor → Do nothing
-    if action == "Monitor":
-        print(f"{ip}: Monitor only. No firewall action.")
-        return
+def terminate_session(session_id):
+    """
+    Placeholder for terminating the current Cowrie session.
 
-    reason = (
-        f"Risk Score {risk_score}"
-        if risk_score is not None
-        else "Risk based firewall action"
+    Cowrie session termination will be connected here once
+    the exact Cowrie session-control method is integrated.
+    """
+
+    print()
+    print("========== SESSION TERMINATION ==========")
+    print(f"Session ID: {session_id}")
+    print("Action: Current Cowrie session should be terminated.")
+    print("=========================================")
+    print()
+
+
+def process_firewall_decision(src_ip, risk_score, session_id=None):
+    """
+    Main firewall function used by HoneyTrack.
+    """
+
+    action = create_firewall_rule(
+        src_ip,
+        risk_score,
+        session_id
     )
 
-    # -----------------------------------------------------
-    # MEDIUM / HIGH → Temporary block
-    # -----------------------------------------------------
-    if action in (
-        "Alert + Block 30 min",
-        "Block 30 min"
-    ):
-
-        # Already permanently blocked
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT action
-            FROM firewall_rules
-            WHERE src_ip = ?
-            AND status = 'ACTIVE'
-        """, (ip,))
-
-        existing = cursor.fetchone()
-        conn.close()
-
-        if existing and existing[0] == "Permanent Block":
-            print(f"{ip} is permanently blocked.")
-            return
-
-        # Block IP
-        if block_ip(ip):
-
-            expires_at = (
-                datetime.now(timezone.utc)
-                + timedelta(minutes=TEMP_BLOCK_MINUTES)
-            ).isoformat()
-
-            record_firewall_action(
-                ip,
-                action,
-                reason,
-                expires_at
-            )
-
-            print(
-                f"{ip}: Temporary block applied "
-                f"for {TEMP_BLOCK_MINUTES} minutes."
-            )
-
-        return
-
-    # -----------------------------------------------------
-    # CRITICAL → Permanent block
-    # -----------------------------------------------------
+    # Critical = Permanent Block
     if action == "Permanent Block":
 
-        if block_ip(ip):
-
-            record_firewall_action(
-                ip,
-                action,
-                reason,
-                None
-            )
-
-            print(f"{ip}: Permanent block applied.")
-
-        return
-
-    print(f"Unknown firewall action: {action}")
-
-
-# ---------------------------------------------------------
-# Expire temporary firewall blocks
-# ---------------------------------------------------------
-def expire_temporary_blocks():
-
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT id, src_ip, expires_at
-        FROM firewall_rules
-        WHERE status = 'ACTIVE'
-        AND expires_at IS NOT NULL
-    """)
-
-    rules = cursor.fetchall()
-
-    now = datetime.now(timezone.utc)
-
-    for rule_id, ip, expires_at in rules:
-
-        try:
-            expiry_time = datetime.fromisoformat(
-                expires_at.replace("Z", "+00:00")
-            )
-
-            if expiry_time <= now:
-
-                print(f"Temporary block expired for {ip}")
-
-                # Remove UFW rule
-                if unblock_ip(ip):
-
-                    cursor.execute("""
-                        UPDATE firewall_rules
-                        SET status = 'EXPIRED'
-                        WHERE id = ?
-                    """, (rule_id,))
-
-                    print(
-                        f"{ip}: Database status changed to EXPIRED."
-                    )
-
-        except Exception as e:
-            print(
-                f"Error processing expiry for {ip}:",
-                e
-            )
-
-    conn.commit()
-    conn.close()
-
-
-# ---------------------------------------------------------
-# Process firewall rules from database
-# ---------------------------------------------------------
-def process_firewall_rules():
-
-    # First remove expired temporary blocks
-    expire_temporary_blocks()
-
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT src_ip, action, reason
-        FROM firewall_rules
-        WHERE status = 'ACTIVE'
-    """)
-
-    rules = cursor.fetchall()
-
-    conn.close()
-
-    for ip, action, reason in rules:
-
-        if action == "Monitor":
-            continue
-
-        # Extract risk score if available
-        risk_score = None
-
-        if reason and "Risk Score" in reason:
-            try:
-                risk_score = int(
-                    reason.replace("Risk Score", "").strip()
-                )
-            except ValueError:
-                pass
-
-        apply_firewall_action(
-            ip,
-            action,
-            risk_score
+        print(
+            f"[ALERT] CRITICAL threat detected from {src_ip}"
         )
 
+        if session_id:
+            terminate_session(session_id)
 
-# ---------------------------------------------------------
-# Main
-# ---------------------------------------------------------
-if __name__ == "__main__":
+    elif action == "Block 30 min":
 
-    print("================================")
-    print(" HoneyTrack Firewall Module")
-    print("================================")
+        print(
+            f"[ALERT] HIGH risk detected from {src_ip}"
+        )
 
-    process_firewall_rules()
+    elif action == "Alert + Block 30 min":
 
-    print("\nFirewall processing completed.")
+        print(
+            f"[ALERT] MEDIUM risk detected from {src_ip}"
+        )
+
+    return action
