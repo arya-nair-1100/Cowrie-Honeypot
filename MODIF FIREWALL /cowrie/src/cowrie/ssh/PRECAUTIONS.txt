@@ -1,2 +1,7 @@
 THE FOLLLOWING FILES IN THE FOLDER SHOULD BE MADE IN THE 
 COWRIE FOLDER IN UR KALI AND NOT IN HONEYTRACK OR HONEYPOT FOLDER 
+
+navigate to cowrie foldeer->src->cowrie->ssh-> you shud see transport.py and factory.py 
+
+
+if factory.py is not present just create it with the code given 
