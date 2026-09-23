@@ -1,0 +1,7 @@
+This folder is created to show the files that were changed during the firewall modifications and all the executed commands for the
+
+same ( u may either copy the file conetents and run the commands specified for the same  or execute the commands one by one) 
+
+when using nano command try to open the file via the file explorer way in kali and editing (script way) ...
+
+      
