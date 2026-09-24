@@ -7,3 +7,15 @@ In a new Kali terminal, run:
 Step 2 -— Find the command output handler
     cd ~/cowrie
     grep -R -n "class .*Command\|def lineReceived\|def handle_INPUT\|def call_command" src/cowrie/shell/
+
+STEP 3 - inspect the actual command handler
+    cd ~/cowrie
+    sed -n '220,285p' src/cowrie/shell/protocol.py
+
+THEN RUN
+    sed -n '175,220p' src/cowrie/shell/honeypot.py
+
+
+THEN IN A NEW TERMINAL ESTABLISH COWRIE CONNECTION BY FOLLOWING THE STEPS IN (RESTARTING COWRIE FILE) 
+AND DO ssh attack ( the output generated is fake and wont be real)
+
