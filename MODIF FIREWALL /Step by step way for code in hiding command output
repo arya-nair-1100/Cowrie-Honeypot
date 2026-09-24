@@ -1,1 +1,9 @@
+Step 1 — Check Cowrie's command handling
 
+In a new Kali terminal, run:
+    cd ~/cowrie
+    grep -n "def.*exec\|def.*input\|display.*output\|send.*data" src/cowrie/shell/command.py
+
+Step 2 -— Find the command output handler
+    cd ~/cowrie
+    grep -R -n "class .*Command\|def lineReceived\|def handle_INPUT\|def call_command" src/cowrie/shell/
