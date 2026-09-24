@@ -1,4 +1,5 @@
 Complete actual UFW IP blocking(including 30min block + alerts)
 dashbaord improvements
+Attack should not see the output of the commands executed 
 Add administrator alerts
 Final testing, screenshots & documentation
