@@ -111,14 +111,20 @@ def get_command_score(command):
 
     command = command.lower().strip()
 
-    for cmd, score in COMMAND_SCORES.items():
+    # Check longer commands first
+    # so "rm -rf" gets 50 instead of "rm" getting 35
+    sorted_commands = sorted(
+        COMMAND_SCORES.keys(),
+        key=len,
+        reverse=True
+    )
+
+    for cmd in sorted_commands:
 
         if command == cmd or command.startswith(cmd + " "):
-
-            return score
+            return COMMAND_SCORES[cmd]
 
     return 0
-
 
 # ============================================================
 # COMMAND CATEGORY
