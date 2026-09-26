@@ -11,6 +11,9 @@ COMMAND_SCORES = {
     "id": 5,
     "uname": 5,
     "hostname": 5,
+    "who": 8,
+    "w": 8,
+    "last": 10,
 
     # File / system discovery
     "cat": 10,
@@ -18,6 +21,10 @@ COMMAND_SCORES = {
     "ps": 10,
     "grep": 8,
     "locate": 10,
+    "env": 8,
+    "printenv": 8,
+    "history": 8,
+    "strings": 15,
 
     # Network reconnaissance
     "netstat": 15,
@@ -25,7 +32,8 @@ COMMAND_SCORES = {
     "ip": 15,
     "ss": 15,
     "route": 15,
-    "arp": 15,
+    "arp": 15, 
+    "nmap": 35,
 
     # Privilege escalation
     "sudo": 30,
@@ -43,15 +51,25 @@ COMMAND_SCORES = {
 
     # Destructive commands
     "rm": 35,
+    "rm -rf": 50,
     "shred": 40,
     "mkfs": 45,
-
+    "dd": 40,
+    
     # Shell execution
     "bash": 25,
     "sh": 25,
     "python": 20,
     "python3": 20,
     "perl": 25,
+
+    # Network tools
+    "nc": 35,
+    "netcat": 35,
+    "telnet": 25,
+
+    # Remote access
+    "ssh": 20,
 
     # Process / service manipulation
     "kill": 25,
@@ -62,7 +80,27 @@ COMMAND_SCORES = {
     "apt": 20,
     "apt-get": 20,
     "yum": 20,
-    "dnf": 20
+    "dnf": 20,
+
+    # Persistence
+    "crontab": 30,
+    "nohup": 25,
+
+    # Account manipulation
+    "useradd": 35,
+    "adduser": 35,
+
+    # Credential manipulation
+    "passwd": 30,
+    "chpasswd": 35,
+
+    # Security manipulation
+    "iptables": 35,
+    "ufw": 30,
+
+    # System manipulation
+    "mount": 20,
+    "umount": 20
 }
 
 
