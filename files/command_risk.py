@@ -1,3 +1,4 @@
+
 # ============================================================
 # ADVANCED COMMAND RISK ENGINE
 # ============================================================
@@ -9,13 +10,13 @@ COMMAND_SCORES = {
     "ls": 2,
     "whoami": 5,
     "id": 5,
-    "uname": 5,
-    "hostname": 5,
     "who": 8,
     "w": 8,
     "last": 10,
+    "uname": 5,
+    "hostname": 5,
 
-    # File / system discovery
+    # File / information discovery
     "cat": 10,
     "find": 10,
     "ps": 10,
@@ -32,8 +33,16 @@ COMMAND_SCORES = {
     "ip": 15,
     "ss": 15,
     "route": 15,
-    "arp": 15, 
+    "arp": 15,
     "nmap": 35,
+
+    # Network tools
+    "nc": 35,
+    "netcat": 35,
+    "telnet": 25,
+
+    # Remote access
+    "ssh": 20,
 
     # Privilege escalation
     "sudo": 30,
@@ -55,21 +64,13 @@ COMMAND_SCORES = {
     "shred": 40,
     "mkfs": 45,
     "dd": 40,
-    
+
     # Shell execution
     "bash": 25,
     "sh": 25,
     "python": 20,
     "python3": 20,
     "perl": 25,
-
-    # Network tools
-    "nc": 35,
-    "netcat": 35,
-    "telnet": 25,
-
-    # Remote access
-    "ssh": 20,
 
     # Process / service manipulation
     "kill": 25,
@@ -126,6 +127,7 @@ def get_command_score(command):
 
     return 0
 
+
 # ============================================================
 # COMMAND CATEGORY
 # ============================================================
@@ -137,36 +139,86 @@ def get_command_category(command):
 
     command = command.lower().strip()
 
-    if command.startswith(("whoami", "id", "pwd", "ls",
-                           "uname", "hostname", "cat",
-                           "find", "ps", "grep", "locate")):
+    def matches(commands):
+        return any(
+            command == cmd or command.startswith(cmd + " ")
+            for cmd in commands
+        )
+
+    if matches([
+        "whoami", "id", "pwd", "ls",
+        "uname", "hostname", "who",
+        "w", "last"
+    ]):
         return "reconnaissance"
 
-    if command.startswith(("netstat", "ifconfig", "ip",
-                           "ss", "route", "arp")):
+    if matches([
+        "cat", "find", "ps", "grep",
+        "locate", "env", "printenv",
+        "history", "strings"
+    ]):
+        return "information_gathering"
+
+    if matches([
+        "netstat", "ifconfig", "ip",
+        "ss", "route", "arp", "nmap"
+    ]):
         return "network_recon"
 
-    if command.startswith(("sudo", "su")):
+    if matches([
+        "nc", "netcat", "telnet"
+    ]):
+        return "network_tool"
+
+    if matches(["ssh"]):
+        return "remote_access"
+
+    if matches(["sudo", "su"]):
         return "privilege_escalation"
 
-    if command.startswith(("wget", "curl", "scp", "ftp")):
+    if matches([
+        "wget", "curl", "scp", "ftp"
+    ]):
         return "download"
 
-    if command.startswith(("chmod", "chown")):
+    if matches(["chmod", "chown"]):
         return "permission_change"
 
-    if command.startswith(("rm", "shred", "mkfs")):
+    if matches([
+        "rm", "shred", "mkfs", "dd"
+    ]):
         return "destructive"
 
-    if command.startswith(("bash", "sh", "python",
-                           "python3", "perl")):
+    if matches([
+        "bash", "sh", "python",
+        "python3", "perl"
+    ]):
         return "execution"
 
-    if command.startswith(("kill", "pkill", "systemctl")):
+    if matches([
+        "kill", "pkill", "systemctl"
+    ]):
         return "process_control"
 
-    if command.startswith(("apt", "apt-get", "yum", "dnf")):
+    if matches([
+        "apt", "apt-get", "yum", "dnf"
+    ]):
         return "package_management"
+
+    if matches(["crontab", "nohup"]):
+        return "persistence"
+
+    if matches(["useradd", "adduser"]):
+        return "account_manipulation"
+
+    if matches(["passwd", "chpasswd"]):
+        return "credential_manipulation"
+
+    if matches(["iptables", "ufw"]):
+        return "security_manipulation"
+
+    if matches(["mount", "umount"]):
+        return "system_manipulation"
 
     return "normal"
 
@@ -201,75 +253,52 @@ def sequence_risk(commands):
 
     risk = 0
 
-    # --------------------------------------------------------
     # Network reconnaissance
-    # --------------------------------------------------------
-
     if (
         "network_recon" in categories
         and "reconnaissance" in categories
     ):
         risk += 8
 
-    # --------------------------------------------------------
     # Privilege escalation
-    # --------------------------------------------------------
-
     if "privilege_escalation" in categories:
         risk += 10
 
-    # --------------------------------------------------------
     # Download + execution
-    # --------------------------------------------------------
-
     if (
         "download" in categories
         and "execution" in categories
     ):
         risk += 15
 
-    # --------------------------------------------------------
     # Download + permission modification
-    # --------------------------------------------------------
-
     if (
         "download" in categories
         and "permission_change" in categories
     ):
         risk += 15
 
-    # --------------------------------------------------------
     # Download + destructive behaviour
-    # --------------------------------------------------------
-
     if (
         "download" in categories
         and "destructive" in categories
     ):
         risk += 15
 
-    # --------------------------------------------------------
     # Privilege escalation + destructive behaviour
-    # --------------------------------------------------------
-
     if (
         "privilege_escalation" in categories
         and "destructive" in categories
     ):
         risk += 20
 
-    # --------------------------------------------------------
     # Multiple suspicious categories
-    # --------------------------------------------------------
-
     suspicious_categories = set(categories) - {"normal"}
 
     if len(suspicious_categories) >= 4:
         risk += 15
-
     elif len(suspicious_categories) >= 3:
         risk += 10
-
     elif len(suspicious_categories) >= 2:
         risk += 5
 
